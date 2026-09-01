@@ -18,7 +18,7 @@ set -uo pipefail
 LOG=/var/log/postinstall.log
 exec >>"$LOG" 2>&1
 
-REDE_INTERNA="${REDE_INTERNA:-<TROQUE_PELO_SEU_REDE_INTERNA>}"
+REDE_INTERNA="${REDE_INTERNA:-network_public}"
 SWAP_GB="${SWAP_GB:-4}"
 TIMEZONE="${TIMEZONE:-America/Sao_Paulo}"
 

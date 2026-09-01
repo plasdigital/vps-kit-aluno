@@ -2,8 +2,8 @@
 #
 # Desenho e o porquê de cada escolha: docs/2026-08-11-chatwoot-design.md
 #
-# Deploy: infra/deploy-chatwoot.sh (não rode docker stack deploy na mão — as
-# variáveis ${...} abaixo saem de infra/vps.env e de /opt/infra/chatwoot/chatwoot.env,
+# Deploy: deploy-chatwoot.sh (não rode docker stack deploy na mão — as
+# variáveis ${...} abaixo saem de vps.env e de /opt/infra/chatwoot/chatwoot.env,
 # que guarda as senhas e NÃO é versionado).
 #
 # Nenhum serviço publica porta no host: quem publica é só o Traefik. Banco e
@@ -78,7 +78,8 @@ services:
     image: chatwoot/chatwoot:${CHATWOOT_VERSAO}
     # ⚠️ O entrypoint oficial NÃO prepara o schema — ao contrário do que o nome
     # sugere, ele só espera o Postgres responder, confere o bundle e executa o
-    # comando. Instalação nova exige `rails db:chatwoot_prepare` na mão (veja COMECE-AQUI.md); sem isso o serviço sobe e morre em loop com
+    # comando. Instalação nova exige `rails db:chatwoot_prepare` na mão (ver
+    # README.md §Chatwoot); sem isso o serviço sobe e morre em loop com
     # `relation "installation_configs" does not exist`.
     entrypoint: docker/entrypoints/rails.sh
     command: ["bundle", "exec", "rails", "s", "-p", "3000", "-b", "0.0.0.0"]
@@ -177,7 +178,7 @@ services:
 networks:
   # overlay própria da stack: banco e Redis não são alcançáveis nem pelos
   # outros containers da VPS. Some junto se a stack for removida, e isso é
-  # desejado — ao contrário da <TROQUE_PELO_SEU_REDE_INTERNA>, que é externa de propósito.
+  # desejado — ao contrário da network_public, que é externa de propósito.
   interna:
     driver: overlay
     # attachable permite `docker run` avulso nesta rede — é o que faz o
@@ -187,7 +188,7 @@ networks:
     # e aí já teria o banco de qualquer forma.
     attachable: true
 
-  <TROQUE_PELO_SEU_REDE_INTERNA>:
+  network_public:
     external: true
     name: ${REDE_INTERNA}
 

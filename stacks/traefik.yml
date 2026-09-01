@@ -4,8 +4,8 @@
 # rede overlay, sem porta exposta. É isso que permite o firewall liberar só
 # 80 e 443 sem que nada pare de funcionar.
 #
-# Deploy: infra/deploy.sh (não rode docker stack deploy na mão — as variáveis
-# ${...} abaixo vêm do infra/vps.env)
+# Deploy: deploy.sh (não rode docker stack deploy na mão — as variáveis
+# ${...} abaixo vêm do vps.env)
 
 services:
   traefik:
@@ -96,6 +96,6 @@ volumes:
 networks:
   # criada pelo post-install, fora de qualquer stack: se ela pertencesse a uma
   # stack, remover essa stack levaria a rede junto e derrubaria todo o resto.
-  <TROQUE_PELO_SEU_REDE_INTERNA>:
+  network_public:
     external: true
     name: ${REDE_INTERNA}

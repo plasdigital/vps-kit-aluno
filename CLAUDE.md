@@ -1,7 +1,13 @@
 # Instruções do agente — kit de VPS
 
-Esta pasta instala e opera uma VPS: Docker + Swarm, Traefik (proxy com SSL automático),
-Portainer (painel) e Chatwoot (caixa de atendimento). Você é o operador; o dono não abre terminal.
+Esta pasta instala e opera uma VPS: Docker + Swarm, Traefik (proxy com SSL automático) e
+Portainer (painel) como base, e em cima dela três aplicações — **Chatwoot** (caixa de
+atendimento), **n8n** (automações) e **NocoDB** (banco visual). Você é o operador; o dono
+não abre terminal.
+
+**Instale só o que ele pediu, um de cada vez.** As três aplicações são independentes: cada
+uma tem stack, banco e backup próprios. Subir as três "já que estamos aqui" é o erro mais
+caro deste kit — veja o aviso de memória abaixo.
 
 ## Onde os parâmetros moram
 
@@ -9,8 +15,28 @@ Portainer (painel) e Chatwoot (caixa de atendimento). Você é o operador; o don
 |---|---|---|
 | `vps.env` | domínio, hosts, versões fixadas. **Sem segredo.** | nesta pasta e em `/opt/infra/` na VPS |
 | `chatwoot.env` | as três senhas do Chatwoot | **só na VPS**, em `/opt/infra/chatwoot/`, `chmod 600` |
+| `n8n.env` | senha do banco, do Redis e a chave de criptografia | **só na VPS**, em `/opt/infra/n8n/`, `chmod 600` |
+| `nocodb.env` | senha do banco e o segredo de sessão | **só na VPS**, em `/opt/infra/nocodb/`, `chmod 600` |
 
-Se `vps.env` não existir, copie de `vps.env.exemplo` e peça ao dono os dois hosts.
+Se `vps.env` não existir, copie de `vps.env.exemplo` e peça ao dono os hosts — **só os das
+aplicações que ele vai instalar agora**. Host preenchido sem DNS apontado faz o Traefik
+tentar emitir certificado para um nome que não existe, e a Let's Encrypt bloqueia por
+tentativas repetidas (5 falhas por hora, por domínio).
+
+## ⚠️ Memória: cabe, mas não é infinito
+
+Numa máquina de 8 GB as quatro stacks juntas (base + Chatwoot + n8n + NocoDB) somam **cerca
+de 10 GB de limite declarado**. Isso não é erro e não impede nada: o limite é teto por
+container — rede de proteção para um serviço vazando não derrubar os outros —, não reserva.
+O consumo real fica bem abaixo.
+
+O que fazer com isso:
+
+- **Não "otimize" limite por causa desta conta.** Número que parece errado não é problema.
+  Problema é o que se constata no log: houve OOM? algum serviço reiniciou? alguém sentiu?
+- **Antes de subir a terceira aplicação**, rode `free -h` e mostre ao dono quanto sobrou.
+- Se aparecer serviço reiniciando sozinho, procure a evidência antes de propor qualquer
+  coisa: `ssh <vps> 'dmesg -T | grep -i "killed process"'`. Sem essa linha, não houve OOM.
 
 ## As possibilidades
 
@@ -24,7 +50,7 @@ Se `vps.env` não existir, copie de `vps.env.exemplo` e peça ao dono os dois ho
 | "o site responde?" | `curl -sI https://<host>` |
 | "o certificado está válido?" | `echo \| openssl s_client -connect <host>:443 -servername <host> 2>/dev/null \| openssl x509 -noout -issuer -dates` |
 | "a máquina está fechada?" | `ssh <vps> 'ss -tlnp'` — só 22, 80, 443 devem escutar na interface pública |
-| "o backup rodou?" | `ssh <vps> 'ls -la /opt/infra/backups/chatwoot; tail -5 /var/log/chatwoot-backup.log'` |
+| "o backup rodou?" | `ssh <vps> 'ls -la /opt/infra/backups/<app>; tail -5 /var/log/<app>-backup.log'` |
 | "qual versão está rodando?" | `ssh <vps> "docker service inspect <serviço> --format '{{.Spec.TaskTemplate.ContainerSpec.Image}}'"` |
 
 🔴 **Estado nunca se lê de documento.** "Está no ar?", "qual versão?", "quanto de RAM?" se perguntam
@@ -39,6 +65,8 @@ Se `vps.env` não existir, copie de `vps.env.exemplo` e peça ao dono os dois ho
 | "prepara o banco" | `bash /opt/infra/chatwoot-rails.sh bundle exec rails db:chatwoot_prepare` | uma vez, na instalação |
 | "cria um atendente" | `CW_SENHA='...' bash /opt/infra/chatwoot-criar-usuario.sh <email> "<Nome>" agent` | senha precisa de símbolo |
 | "cria o dono" | o mesmo, com `superadmin` | **fecha a porta de trás — veja as travas** |
+| "instala o n8n" | `bash /opt/infra/deploy-n8n.sh` | precisa dos **dois** DNS: editor e webhook |
+| "instala o NocoDB" | `bash /opt/infra/deploy-nocodb.sh` | os segredos precisam existir |
 | "atualiza o X" | editar a versão em `vps.env` e rodar o deploy | leia a regra de versão abaixo |
 
 **Enviar arquivo para a VPS** (Windows quebra sem o `sed` — veja armadilhas):
@@ -47,6 +75,43 @@ Se `vps.env` não existir, copie de `vps.env.exemplo` e peça ao dono os dois ho
 scp -i ~/.ssh/minha-vps -r ./* root@<IP>:/opt/infra/
 ssh -i ~/.ssh/minha-vps root@<IP> 'sed -i "s/\r$//" /opt/infra/*.sh /opt/infra/*.env'
 ```
+
+## 🔴 Antes de instalar: confira a documentação oficial de HOJE
+
+Esta pasta foi escrita numa data e fixa versões. Software muda: o projeto renomeia uma
+variável, troca a imagem base, muda o caminho do healthcheck, publica um aviso de
+segurança. Um kit que nunca olha para fora envelhece em silêncio e quebra na mão do dono.
+
+**Antes de subir cada serviço, pesquise na internet e leia a fonte oficial daquele
+serviço.** Não é opcional e não precisa de permissão — é leitura.
+
+| Serviço | O que abrir |
+|---|---|
+| Traefik | as releases no GitHub do `traefik/traefik` + a doc de Docker Swarm |
+| Portainer | as releases no GitHub do `portainer/portainer` |
+| Chatwoot | as releases no GitHub do `chatwoot/chatwoot` + o `docker-compose` oficial |
+| n8n | as releases no GitHub do `n8n-io/n8n` + a doc de *queue mode* |
+| NocoDB | as releases no GitHub do `nocodb/nocodb` + a doc de instalação por Docker |
+
+O que você está procurando, em ordem de importância:
+
+1. **Mudança que quebra** (*breaking change*) entre a versão fixada aqui e a atual —
+   variável renomeada, valor que virou obrigatório, migração de banco que não é automática.
+2. **Aviso de segurança** na versão fixada. Se houver, é motivo para subir de versão.
+3. **Mudança no jeito de instalar** — o compose oficial mudou de forma, o entrypoint passou
+   a fazer (ou deixou de fazer) alguma etapa.
+
+**Como agir com o que achar** — e esta é a parte que importa:
+
+- Achou diferença → **conte ao dono em português, com o link**, e diga o que recomenda.
+  Não conserte calado: quem lê a instrução daqui a seis meses precisa saber que ela mudou.
+- Não achou nada → siga o kit como está, e diga que conferiu. "Conferi as releases do
+  Chatwoot, a versão fixada aqui é a atual, sem aviso de segurança" é uma frase que dá
+  confiança e custa 30 segundos.
+- ⛔ **Nunca troque a versão fixada por conta própria**, nem por `latest`. A versão nova
+  pode ser regressão: projeto remove funcionalidade, muda licença, corta opção em uso.
+  A pergunta certa nunca é *"qual é a última?"*, é *"o que a nova traz que a gente quer, e
+  o que a gente perde?"* — e quem responde é o dono.
 
 ## As travas — o que você NUNCA faz sozinho
 

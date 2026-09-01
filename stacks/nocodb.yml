@@ -1,0 +1,106 @@
+# NocoDB — a planilha que na verdade é um banco de dados
+#
+# Serve para a operação interna: o cadastro, o controle, a lista que hoje
+# mora numa planilha e precisa ser lida por automação. O n8n conversa com
+# ele por API, e é essa dupla que substitui a planilha compartilhada.
+#
+# O que este arquivo assume:
+#   - Postgres é DESTA stack, não emprestado de outra aplicação. Uma stack
+#     por serviço é o princípio do padrão — veja docs/por-que-este-padrao.md.
+#   - Usuário de banco dedicado (`nocodb`), não o superusuário `postgres`.
+#     Se o NocoDB for invadido, o estrago para na base dele.
+#   - NC_AUTH_JWT_SECRET gerado por você, em vez de deixar o NocoDB inventar
+#     um sozinho — assim ele sobrevive a recriar o container.
+#   - Versão fixada, nunca `latest`. E a versão que se fixa é a que está rodando
+#     estável em algum lugar, não a mais nova que existe.
+#
+# Deploy: deploy-nocodb.sh (não rode docker stack deploy na mão — as
+# variáveis ${...} saem de vps.env e de /opt/infra/nocodb/nocodb.env, que
+# guarda as senhas e NÃO é versionado).
+#
+# Nenhum serviço publica porta no host: quem publica é só o Traefik. O banco
+# fica só na overlay interna desta stack.
+
+services:
+  postgres:
+    image: ${NOCO_PG_IMAGEM}
+    environment:
+      POSTGRES_DB: nocodb
+      POSTGRES_USER: nocodb
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    volumes:
+      - postgres:/var/lib/postgresql/data
+    networks:
+      - interna
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U nocodb -d nocodb"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+    deploy:
+      mode: replicated
+      replicas: 1
+      placement:
+        constraints:
+          - node.role == manager
+      resources:
+        limits:
+          memory: 512M
+      restart_policy:
+        condition: any
+        delay: 5s
+
+  nocodb:
+    image: nocodb/nocodb:${NOCO_VERSAO}
+    environment:
+      NC_DB: pg://postgres:5432?u=nocodb&p=${POSTGRES_PASSWORD}&d=nocodb
+      NC_PUBLIC_URL: https://${NOCO_HOST}
+      NC_AUTH_JWT_SECRET: ${NC_AUTH_JWT_SECRET}
+      # desativa telemetria — mesma escolha da instalação de referência
+      NC_DISABLE_TELE: "true"
+    volumes:
+      - nocodb_data:/usr/app/data
+    networks:
+      - interna
+      - ${REDE_INTERNA}
+    deploy:
+      mode: replicated
+      replicas: 1
+      placement:
+        constraints:
+          - node.role == manager
+      resources:
+        limits:
+          cpus: "1"
+          memory: 1024M
+      restart_policy:
+        condition: any
+        delay: 10s
+      labels:
+        - traefik.enable=true
+        # é traefik.swarm.network, não traefik.docker.network — a label
+        # antiga é ignorada em silêncio no v3 e o sintoma é "bad gateway"
+        # sem log (achado do padrão, ver docs/2026-08-11-padrao-vps-design.md)
+        - traefik.swarm.network=${REDE_INTERNA}
+        - traefik.http.routers.nocodb.rule=Host(`${NOCO_HOST}`)
+        - traefik.http.routers.nocodb.entrypoints=websecure
+        - traefik.http.routers.nocodb.tls.certresolver=le
+        - traefik.http.routers.nocodb.middlewares=seguranca@file
+        - traefik.http.services.nocodb.loadbalancer.server.port=8080
+
+networks:
+  # overlay própria da stack: o banco não é alcançável nem pelos outros
+  # containers da VPS.
+  interna:
+    driver: overlay
+    attachable: true
+
+  network_public:
+    external: true
+    name: ${REDE_INTERNA}
+
+volumes:
+  # o Swarm prefixa com o nome da stack: nocodb_postgres, nocodb_nocodb_data
+  postgres:
+  nocodb_data:

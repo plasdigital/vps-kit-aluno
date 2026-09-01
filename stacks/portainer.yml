@@ -4,7 +4,7 @@
 # Claude Code por SSH, mas se a IA não estiver disponível existe um painel com
 # login para mexer nos containers na mão.
 #
-# Deploy: infra/deploy.sh
+# Deploy: deploy.sh
 
 services:
   # O agente é quem fala com o Docker de cada nó. Numa VPS só, parece indireção
@@ -64,7 +64,7 @@ networks:
   agent_network:
     driver: overlay
     attachable: true
-  <TROQUE_PELO_SEU_REDE_INTERNA>:
+  network_public:
     external: true
     name: ${REDE_INTERNA}
 

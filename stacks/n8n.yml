@@ -1,0 +1,213 @@
+# n8n — as automações que rodam 24 horas por dia
+#
+# Modo fila: editor, webhook e worker são processos SEPARADOS, com Redis
+# entre eles. É mais peça do que o n8n "de um container só", e é de
+# propósito — assim um workflow pesado não trava a tela do editor, e o
+# webhook continua respondendo enquanto o worker ainda processa.
+#
+# O que este arquivo assume:
+#   - Postgres e Redis são DESTA stack, não emprestados de outra aplicação.
+#     Uma stack por serviço é o princípio do padrão — veja
+#     docs/por-que-este-padrao.md.
+#   - N8N_ENCRYPTION_KEY é sua e só sua. Ela decifra as credenciais salvas
+#     no banco; reaproveitar a chave de outra instalação amarra as duas para
+#     sempre. Gere uma nova — o n8n.env.exemplo diz como.
+#   - Sem SMTP. Sem ele o "esqueci minha senha" não funciona, e recuperar o
+#     dono é por linha de comando. Configure quando tiver um e-mail de envio
+#     seu; emprestar a credencial de e-mail de outro serviço é o caminho
+#     curto que cobra caro depois.
+#   - Versão fixada, nunca `latest`.
+#
+# Deploy: deploy-n8n.sh (não rode docker stack deploy na mão — as
+# variáveis ${...} saem de vps.env e de /opt/infra/n8n/n8n.env, que
+# guarda as senhas e NÃO é versionado).
+#
+# Nenhum serviço publica porta no host: quem publica é só o Traefik. Banco e
+# Redis ficam só na overlay interna desta stack.
+
+services:
+  postgres:
+    image: ${N8N_PG_IMAGEM}
+    environment:
+      POSTGRES_DB: n8n
+      POSTGRES_USER: n8n
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    volumes:
+      - postgres:/var/lib/postgresql/data
+    networks:
+      - interna
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U n8n -d n8n"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+    deploy:
+      mode: replicated
+      replicas: 1
+      placement:
+        constraints:
+          - node.role == manager
+      resources:
+        limits:
+          memory: 512M
+      restart_policy:
+        condition: any
+        delay: 5s
+
+  redis:
+    image: ${N8N_REDIS_IMAGEM}
+    # $$ vira $ literal: quem expande é o shell dentro do container, não o
+    # docker stack deploy. Sem o escape, a senha apareceria no YAML expandido.
+    command: ["sh", "-c", "redis-server --requirepass \"$$REDIS_PASSWORD\" --appendonly yes"]
+    environment:
+      REDIS_PASSWORD: ${REDIS_PASSWORD}
+    volumes:
+      - redis:/data
+    networks:
+      - interna
+    healthcheck:
+      test: ["CMD-SHELL", "redis-cli -a \"$$REDIS_PASSWORD\" ping | grep -q PONG"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 15s
+    deploy:
+      mode: replicated
+      replicas: 1
+      placement:
+        constraints:
+          - node.role == manager
+      resources:
+        limits:
+          memory: 256M
+      restart_policy:
+        condition: any
+        delay: 5s
+
+  editor:
+    image: n8nio/n8n:${N8N_VERSAO}
+    environment: &n8n_env
+      DB_TYPE: postgresdb
+      DB_POSTGRESDB_HOST: postgres
+      DB_POSTGRESDB_PORT: "5432"
+      DB_POSTGRESDB_DATABASE: n8n
+      DB_POSTGRESDB_USER: n8n
+      DB_POSTGRESDB_PASSWORD: ${POSTGRES_PASSWORD}
+      EXECUTIONS_MODE: queue
+      QUEUE_BULL_REDIS_HOST: redis
+      QUEUE_BULL_REDIS_PORT: "6379"
+      QUEUE_BULL_REDIS_PASSWORD: ${REDIS_PASSWORD}
+      QUEUE_HEALTH_CHECK_ACTIVE: "true"
+      N8N_ENCRYPTION_KEY: ${N8N_ENCRYPTION_KEY}
+      N8N_HOST: ${N8N_HOST}
+      N8N_EDITOR_BASE_URL: https://${N8N_HOST}/
+      N8N_PROTOCOL: https
+      N8N_PORT: "5678"
+      # atrás de um único proxy reverso (o Traefik) — sem isto o n8n não
+      # confia no X-Forwarded-Proto e o cookie de sessão seguro não fecha.
+      N8N_PROXY_HOPS: "1"
+      WEBHOOK_URL: https://${N8N_WEBHOOK_HOST}/
+      GENERIC_TIMEZONE: America/Sao_Paulo
+      TZ: America/Sao_Paulo
+      EXECUTIONS_DATA_PRUNE: "true"
+      EXECUTIONS_DATA_MAX_AGE: "336"
+      N8N_RUNNERS_ENABLED: "true"
+      N8N_COMMUNITY_PACKAGES_ENABLED: "true"
+      # Trava um node de código de ler as variáveis de ambiente do
+      # processo — inclusive as senhas do banco. O padrão do n8n é frouxo
+      # aqui. Só afrouxe se um workflow SEU precisar, sabendo o que abre.
+      N8N_BLOCK_ENV_ACCESS_IN_NODE: "true"
+      N8N_ONBOARDING_FLOW_DISABLED: "true"
+    volumes:
+      - n8n_data:/home/node/.n8n
+    networks:
+      - interna
+      - ${REDE_INTERNA}
+    deploy:
+      mode: replicated
+      replicas: 1
+      placement:
+        constraints:
+          - node.role == manager
+      resources:
+        limits:
+          memory: 1G
+      restart_policy:
+        condition: any
+        delay: 10s
+      labels:
+        - traefik.enable=true
+        # é traefik.swarm.network, não traefik.docker.network — a label
+        # antiga é ignorada em silêncio no v3 e o sintoma é "bad gateway"
+        # sem log (achado do padrão, ver docs/2026-08-11-padrao-vps-design.md)
+        - traefik.swarm.network=${REDE_INTERNA}
+        - traefik.http.routers.n8n_editor.rule=Host(`${N8N_HOST}`)
+        - traefik.http.routers.n8n_editor.entrypoints=websecure
+        - traefik.http.routers.n8n_editor.tls.certresolver=le
+        - traefik.http.routers.n8n_editor.middlewares=seguranca@file
+        - traefik.http.services.n8n_editor.loadbalancer.server.port=5678
+
+  webhook:
+    image: n8nio/n8n:${N8N_VERSAO}
+    command: ["webhook"]
+    environment: *n8n_env
+    networks:
+      - interna
+      - ${REDE_INTERNA}
+    deploy:
+      mode: replicated
+      replicas: 1
+      placement:
+        constraints:
+          - node.role == manager
+      resources:
+        limits:
+          memory: 512M
+      restart_policy:
+        condition: any
+        delay: 10s
+      labels:
+        - traefik.enable=true
+        - traefik.swarm.network=${REDE_INTERNA}
+        - traefik.http.routers.n8n_webhook.rule=Host(`${N8N_WEBHOOK_HOST}`)
+        - traefik.http.routers.n8n_webhook.entrypoints=websecure
+        - traefik.http.routers.n8n_webhook.tls.certresolver=le
+        - traefik.http.routers.n8n_webhook.middlewares=seguranca@file
+        - traefik.http.services.n8n_webhook.loadbalancer.server.port=5678
+
+  worker:
+    image: n8nio/n8n:${N8N_VERSAO}
+    command: ["worker", "--concurrency=10"]
+    environment: *n8n_env
+    networks:
+      - interna
+    deploy:
+      mode: replicated
+      replicas: 1
+      placement:
+        constraints:
+          - node.role == manager
+      resources:
+        limits:
+          memory: 1G
+      restart_policy:
+        condition: any
+        delay: 10s
+
+networks:
+  # overlay própria da stack: banco e Redis não são alcançáveis nem pelos
+  # outros containers da VPS.
+  interna:
+    driver: overlay
+    attachable: true
+
+  network_public:
+    external: true
+    name: ${REDE_INTERNA}
+
+volumes:
+  # o Swarm prefixa com o nome da stack: n8n_postgres, n8n_redis, n8n_n8n_data
+  postgres:
+  redis:
+  n8n_data:

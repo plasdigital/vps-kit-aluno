@@ -1,4 +1,4 @@
-# Comece aqui — do nada até o Chatwoot no ar
+# Comece aqui — do nada até o primeiro serviço no ar
 
 A ordem importa. Alguns passos **não são reversíveis de graça** — eles estão marcados 🔴.
 
@@ -12,7 +12,18 @@ está acontecendo**, não para decorar.
 - [ ] **Um domínio que você controla.** Precisa poder criar registros nele. 🔴 Sem domínio não há
       cadeado: o certificado gratuito **não é emitido para endereço de número**.
 - [ ] **Claude Code instalado**, com plano Pro ou Max. O plano grátis não inclui.
-- [ ] Decidir os dois endereços: `portainer.seudominio.com.br` e `chat.seudominio.com.br`.
+- [ ] Decidir os endereços. O do painel — `portainer.seudominio.com.br` — mais o da aplicação
+      que você vai instalar **primeiro**:
+
+      | Aplicação | O que é | Endereços |
+      |---|---|---|
+      | Chatwoot | a caixa onde as conversas chegam | `chat.seudominio.com.br` |
+      | n8n | as automações rodando sozinhas | `n8n.` **e** `webhook.seudominio.com.br` |
+      | NocoDB | a planilha que é banco de dados | `noco.seudominio.com.br` |
+
+      ⚠️ **Uma de cada vez.** As três funcionam juntas na mesma máquina, mas instalar tudo de
+      uma vez transforma qualquer erro num quebra-cabeça: você não sabe qual peça falhou. Suba
+      uma, confirme que abre com cadeado, e só então a próxima.
       🔴 Se o nome `chat` já é usado por outro fornecedor, escolha outro **agora** — trocar depois é
       caro, porque ele fica gravado em link, na configuração e no webhook do WhatsApp.
 
@@ -99,6 +110,27 @@ certificado é o Let's Encrypt.
 
 Se aparecer "TRAEFIK DEFAULT CERT" em vez disso, o DNS ainda não propagou. **Espere** — não recrie
 o serviço, porque quem emite o certificado tem trava de tentativa e insistir só atrasa.
+
+---
+
+## 5.5. 🔴 Peça ao Claude para conferir a documentação oficial
+
+Antes de instalar qualquer aplicação, peça:
+
+> *"antes de instalar, pesquisa a documentação oficial e as releases desse projeto no GitHub
+> e me diz se mudou alguma coisa desde que este kit foi escrito"*
+
+Os arquivos daqui fixam versão — de propósito, para nada trocar sozinho no meio da noite. O
+efeito colateral é que eles envelhecem: o projeto renomeia uma variável, muda o jeito de
+instalar, publica um aviso de segurança. Trinta segundos de leitura evitam uma hora de erro
+que não faz sentido.
+
+**Deu certo quando:** o Claude te disser explicitamente uma das duas coisas — *"conferi, a
+versão fixada é a atual e não há aviso de segurança"* ou *"mudou X, e eu recomendo Y"*. Se
+ele não falou de nenhuma das duas, ele não conferiu.
+
+⛔ E se ele achar versão mais nova: **a decisão de subir é sua, não dele.** A versão nova pode
+ter tirado algo que você usa.
 
 ---
 
@@ -208,6 +240,20 @@ rede de proteção da manutenção do dia.
   porque quem decide é a parte visual. A prova é bater na interface de programação.
 
 ---
+
+## E depois — a segunda e a terceira aplicação
+
+Com a base de pé, cada nova aplicação é o mesmo ciclo curto, e nenhuma mexe nas outras:
+
+1. criar o registro DNS do endereço dela (etapa 4);
+2. criar o arquivo de segredos em `/opt/infra/<app>/` (o `.env.exemplo` diz quais valores);
+3. pedir ao Claude para conferir a documentação oficial (etapa 5.5);
+4. `bash /opt/infra/deploy-<app>.sh`;
+5. abrir no navegador e conferir o cadeado.
+
+Para o **n8n** há uma diferença que pega todo mundo: são **dois** endereços, não um. Um é a
+tela onde você desenha o fluxo; o outro é o que recebe as chamadas de fora. Os dois precisam
+de registro A antes do deploy.
 
 ## E depois
 

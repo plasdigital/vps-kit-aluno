@@ -37,7 +37,7 @@ vps.env.exemplo       copie para vps.env e preencha os dois endereços
 postinstall.sh        prepara a máquina sozinha, no primeiro boot
 deploy.sh             sobe a base: Traefik + Portainer
 stacks/               os arquivos de cada serviço
-deploy-chatwoot.sh    sobe o Chatwoot e instala o backup diário
+deploy-chatwoot.sh    sobe as aplicações e instala o backup diário
 chatwoot-rails.sh     roda comando por dentro do Chatwoot
 chatwoot-criar-usuario.sh   cria pessoa — e fecha a porta de trás
 backup-chatwoot.sh    o backup de todo dia
