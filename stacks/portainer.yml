@@ -1,0 +1,79 @@
+# Padrão de VPS — painel de gestão
+#
+# O Portainer é a rede de segurança: a operação normal desta VPS é feita pelo
+# Claude Code por SSH, mas se a IA não estiver disponível existe um painel com
+# login para mexer nos containers na mão.
+#
+# Deploy: infra/deploy.sh
+
+services:
+  # O agente é quem fala com o Docker de cada nó. Numa VPS só, parece indireção
+  # à toa — mas é o que faz o segundo nó aparecer sozinho no painel no dia em
+  # que a infra crescer, sem reinstalar nada.
+  agent:
+    image: portainer/agent:${PORTAINER_VERSAO}
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - /var/lib/docker/volumes:/var/lib/docker/volumes
+    networks:
+      - agent_network
+    deploy:
+      mode: global
+      placement:
+        constraints:
+          - node.platform.os == linux
+
+  portainer:
+    image: portainer/portainer-ce:${PORTAINER_VERSAO}
+    # A senha do admin é definida aqui, e não na tela de boas-vindas, por um
+    # motivo prático: o Portainer se TRANCA sozinho se ninguém criar o admin
+    # nos primeiros 5 minutos ("timed out for security purposes"), e aí só
+    # reiniciando o serviço para ganhar mais 5. Numa instalação automatizada
+    # — ou na mão de um aluno — essa corrida contra o relógio é perdida quase
+    # sempre. Com o secret, a instância já nasce com dono.
+    command: -H tcp://tasks.agent:9001 --tlsskipverify --admin-password-file /run/secrets/portainer_admin
+    secrets:
+      - portainer_admin
+    volumes:
+      - portainer_data:/data
+    networks:
+      - agent_network
+      - ${REDE_INTERNA}
+    deploy:
+      mode: replicated
+      replicas: 1
+      placement:
+        constraints:
+          - node.role == manager
+      resources:
+        limits:
+          memory: 512M
+      labels:
+        - traefik.enable=true
+        # v3 com provider swarm usa traefik.swarm.network. A maioria dos
+        # tutoriais ainda ensina traefik.docker.network, que aqui é ignorado
+        # em silêncio — e o sintoma é "bad gateway" sem erro no log.
+        - traefik.swarm.network=${REDE_INTERNA}
+        - traefik.http.routers.portainer.rule=Host(`${PORTAINER_HOST}`)
+        - traefik.http.routers.portainer.entrypoints=websecure
+        - traefik.http.routers.portainer.tls.certresolver=le
+        - traefik.http.routers.portainer.middlewares=seguranca@file
+        - traefik.http.services.portainer.loadbalancer.server.port=9000
+
+networks:
+  agent_network:
+    driver: overlay
+    attachable: true
+  <TROQUE_PELO_SEU_REDE_INTERNA>:
+    external: true
+    name: ${REDE_INTERNA}
+
+volumes:
+  portainer_data:
+
+secrets:
+  # Criado fora da stack, para a senha não passar por nenhum arquivo versionado:
+  #   printf '%s' 'SENHA' | docker secret create portainer_admin -
+  # Guarde o valor no seu gerenciador de senhas.
+  portainer_admin:
+    external: true

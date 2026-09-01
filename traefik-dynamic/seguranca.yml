@@ -1,0 +1,26 @@
+# Padrão de VPS — configuração dinâmica do Traefik
+#
+# Middlewares reutilizáveis. Qualquer aplicação chama pelo nome, com o sufixo
+# @file (que diz ao Traefik que veio deste arquivo, não de uma label):
+#
+#     traefik.http.routers.<app>.middlewares=seguranca@file
+#
+# Está num arquivo, e não em labels do próprio Traefik, porque middleware
+# global não pertence a nenhum serviço. Em arquivo ele é lido de uma vez,
+# recarregado sozinho ao salvar, e some da lista de serviços do Traefik.
+
+http:
+  middlewares:
+    seguranca:
+      headers:
+        # HSTS: o navegador passa a recusar HTTP neste domínio por 1 ano.
+        # Só ative depois que o HTTPS estiver funcionando — voltar atrás
+        # exige esperar o cache do navegador expirar.
+        stsSeconds: 31536000
+        stsIncludeSubdomains: true
+        stsPreload: true
+        forceSTSHeader: true
+        # impede o navegador de adivinhar o tipo do arquivo
+        contentTypeNosniff: true
+        frameDeny: true
+        referrerPolicy: strict-origin-when-cross-origin

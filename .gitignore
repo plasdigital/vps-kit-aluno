@@ -1,0 +1,5 @@
+# nunca versione o que tem endereço ou senha da sua máquina
+vps.env
+*.env
+!*.env.exemplo
+.ssh/

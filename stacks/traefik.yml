@@ -1,0 +1,101 @@
+# Padrão de VPS — proxy de borda
+#
+# Único serviço que publica porta no host. Todo o resto fica atrás dele, na
+# rede overlay, sem porta exposta. É isso que permite o firewall liberar só
+# 80 e 443 sem que nada pare de funcionar.
+#
+# Deploy: infra/deploy.sh (não rode docker stack deploy na mão — as variáveis
+# ${...} abaixo vêm do infra/vps.env)
+
+services:
+  traefik:
+    image: traefik:${TRAEFIK_VERSAO}
+    command:
+      # ── dashboard desligado ──────────────────────────────────────────────
+      # Ele expõe roteamento, serviços e middlewares sem pedir senha. Quem
+      # precisa de visão gráfica usa o Portainer, que tem login.
+      - --api.dashboard=false
+      - --api.insecure=false
+      - --log.level=INFO
+      # access log fica desligado: numa VPS de clínica ou loja ele registraria URL de
+      # cliente final a cada request, e conversa de farmácia é dado sensível
+      # de saúde (veja docs/dados-sensiveis.md). Ligar só para depurar, e por pouco tempo.
+      - --accesslog=false
+
+      # ── descoberta de serviços ───────────────────────────────────────────
+      # No Traefik v3 o provider do Swarm é separado do provider do Docker.
+      - --providers.swarm=true
+      - --providers.swarm.endpoint=unix:///var/run/docker.sock
+      # nada é exposto sem pedir: cada app precisa de traefik.enable=true
+      - --providers.swarm.exposedByDefault=false
+      - --providers.swarm.network=${REDE_INTERNA}
+      - --providers.swarm.refreshSeconds=15
+
+      # middlewares reutilizáveis, em arquivo (ver traefik-dynamic/)
+      - --providers.file.directory=/etc/traefik/dynamic
+      - --providers.file.watch=true
+
+      # ── portas ───────────────────────────────────────────────────────────
+      - --entryPoints.web.address=:80
+      - --entryPoints.web.http.redirections.entryPoint.to=websecure
+      - --entryPoints.web.http.redirections.entryPoint.scheme=https
+      - --entryPoints.web.http.redirections.entryPoint.permanent=true
+      - --entryPoints.websecure.address=:443
+      - --entryPoints.websecure.http.tls.certResolver=le
+
+      # ── certificado ──────────────────────────────────────────────────────
+      # HTTP-01: o Let's Encrypt confirma o domínio batendo na porta 80 desta
+      # VPS. Não precisa de token de DNS guardado na máquina — ver a decisão
+      # em docs/2026-08-11-padrao-vps-design.md.
+      - --certificatesResolvers.le.acme.email=${ACME_EMAIL}
+      - --certificatesResolvers.le.acme.storage=/letsencrypt/acme.json
+      - --certificatesResolvers.le.acme.httpChallenge=true
+      - --certificatesResolvers.le.acme.httpChallenge.entryPoint=web
+
+    ports:
+      # mode: host preserva o IP real de quem acessa. Com o mode ingress
+      # (padrão), todo request chegaria com o IP interno do Swarm — e o
+      # fail2ban e os logs de aplicação ficariam cegos.
+      - target: 80
+        published: 80
+        protocol: tcp
+        mode: host
+      - target: 443
+        published: 443
+        protocol: tcp
+        mode: host
+
+    volumes:
+      # somente leitura: o Traefik só precisa enxergar os serviços, nunca
+      # criar nem apagar. Socket do Docker com escrita equivale a root na VPS.
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - traefik_certs:/letsencrypt
+      - /opt/infra/traefik/dynamic:/etc/traefik/dynamic:ro
+
+    networks:
+      - ${REDE_INTERNA}
+
+    deploy:
+      mode: replicated
+      replicas: 1
+      placement:
+        constraints:
+          - node.role == manager
+      resources:
+        limits:
+          memory: 512M
+      restart_policy:
+        condition: any
+        delay: 5s
+      update_config:
+        order: start-first
+
+volumes:
+  traefik_certs:
+
+networks:
+  # criada pelo post-install, fora de qualquer stack: se ela pertencesse a uma
+  # stack, remover essa stack levaria a rede junto e derrubaria todo o resto.
+  <TROQUE_PELO_SEU_REDE_INTERNA>:
+    external: true
+    name: ${REDE_INTERNA}
