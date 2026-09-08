@@ -1,263 +1,330 @@
-# Comece aqui — do nada até o primeiro serviço no ar
+# Comece aqui — do zero até a sua primeira ferramenta no ar
 
-A ordem importa. Alguns passos **não são reversíveis de graça** — eles estão marcados 🔴.
+Você vai montar um servidor seu e instalar nele as ferramentas que hoje se paga por mês.
+**Você não vai digitar comando de servidor.** Quem executa é o agente de IA; você decide e confere.
 
-Você vai conversar com o agente. Os comandos abaixo estão escritos para você entender **o que
-está acontecendo**, não para decorar.
+A ordem importa. Alguns passos **não são reversíveis de graça** — estão marcados 🔴.
+
+## A corrente inteira, em uma tela
+
+```
+   0. A mesa            Claude Code + esta pasta + o agente com mão na sua conta
+        |
+   1. O domínio         o nome  ->  sem ele não existe cadeado
+        |
+   2. A chave SSH  🔴   a chave da casa  ->  tem que existir ANTES de a máquina nascer
+        |
+   3. A máquina         comprada e provisionada pelo agente
+        |
+   4. O firewall        3 portas abertas, nada mais
+        |
+   5. O DNS             o nome apontando para o número
+        |
+   6. A base            Traefik (o cadeado) + Portainer (a janela)
+        |
+        +---> 7. A ferramenta que você quiser  (uma de cada vez)
+                 Chatwoot · n8n · NocoDB · Evolution · qualquer projeto do GitHub
+```
+
+Da etapa 0 à 6 você faz **uma vez na vida**. Da 7 em diante é sempre o mesmo ciclo curto, e cada
+ferramenta nova custa poucos minutos.
+
+| Se você quer… | Vá para |
+|---|---|
+| entender o que vai gastar e se vale a pena | [README.md](README.md) |
+| montar a máquina do zero | **§0 a §6, nesta ordem** |
+| instalar o Chatwoot (atendimento) | [docs/instalar-chatwoot.md](docs/instalar-chatwoot.md) |
+| instalar o n8n (automações) | [docs/instalar-n8n.md](docs/instalar-n8n.md) |
+| instalar o NocoDB (a planilha que é banco) | [docs/instalar-nocodb.md](docs/instalar-nocodb.md) |
+| instalar a Evolution API (WhatsApp por QR Code) | [docs/instalar-evolution.md](docs/instalar-evolution.md) |
+| entender onde fica o **banco de dados** | [docs/onde-o-banco-mora.md](docs/onde-o-banco-mora.md) |
+| **instalar uma ferramenta que você achou no GitHub** | [docs/instalar-do-github.md](docs/instalar-do-github.md) |
+| saber por que cada decisão é assim | [docs/por-que-este-padrao.md](docs/por-que-este-padrao.md) |
 
 ---
 
-## Antes de comprar qualquer coisa
+## 0. A mesa — o que precisa existir no seu computador
 
-- [ ] **Um domínio que você controla.** Precisa poder criar registros nele. 🔴 Sem domínio não há
-      cadeado: o certificado gratuito **não é emitido para endereço de número**.
-- [ ] **Claude Code instalado**, com plano Pro ou Max. O plano grátis não inclui.
-- [ ] Decidir os endereços. O do painel — `portainer.seudominio.com.br` — mais o da aplicação
-      que você vai instalar **primeiro**:
+Nada aqui é servidor ainda. É só deixar a mesa pronta.
 
-      | Aplicação | O que é | Endereços |
-      |---|---|---|
-      | Chatwoot | a caixa onde as conversas chegam | `chat.seudominio.com.br` |
-      | n8n | as automações rodando sozinhas | `n8n.` **e** `webhook.seudominio.com.br` |
-      | NocoDB | a planilha que é banco de dados | `noco.seudominio.com.br` |
+| # | O que | Por que | ✅ Deu certo quando |
+|---|---|---|---|
+| 0.1 | **Um e-mail que você acessa** *(óbvio)* | é com ele que se cria todo o resto | — |
+| 0.2 | **Forma de pagamento** | a máquina e a IA são pagas. Não existe caminho 100% grátis | — |
+| 0.3 | **Um terminal aberto** *(óbvio)* | é a tela onde o agente trabalha. No Windows, o PowerShell serve | ele abre e aceita você digitar |
+| 0.4 | **Node.js instalado** *(óbvio para quem já programa, novidade para o resto)* | é o motor que o Claude Code precisa | `node -v` responde um número |
+| 0.5 | **Git instalado** *(óbvio)* | é o que baixa esta pasta | `git --version` responde um número |
+| 0.6 | **Claude Code instalado** | é ele que executa tudo daqui pra frente | digitar `claude` abre a conversa |
+| 0.7 | 🔴 **Plano Pro ou Max da IA** | o plano **grátis não dá Claude Code**. Codex e Antigravity funcionam igual, com assinatura própria | a conversa abre sem pedir upgrade |
 
-      ⚠️ **Uma de cada vez.** As três funcionam juntas na mesma máquina, mas instalar tudo de
-      uma vez transforma qualquer erro num quebra-cabeça: você não sabe qual peça falhou. Suba
-      uma, confirme que abre com cadeado, e só então a próxima.
-      🔴 Se o nome `chat` já é usado por outro fornecedor, escolha outro **agora** — trocar depois é
-      caro, porque ele fica gravado em link, na configuração e no webhook do WhatsApp.
+### 0.8 — Baixar esta pasta
+
+```bash
+git clone https://github.com/plasdigital/vps-kit-aluno.git
+cd vps-kit-aluno
+claude
+```
+
+**Deu certo quando:** a pasta abriu e o agente respondeu. Ele já leu o `CLAUDE.md` que está aqui
+dentro — é por isso que você conversa em português em vez de decorar comando.
+
+### 0.9 — 🔴 Dar mão ao agente: o MCP do provedor
+
+Até aqui o agente só sabe *falar*. Este passo é o que dá a ele **mão** na sua conta de hospedagem:
+comprar máquina, abrir firewall, criar registro de DNS, tirar snapshot.
+
+```bash
+claude mcp add --transport http hostinger https://mcp.hostinger.com
+```
+
+O navegador abre, você autoriza com a sua conta e pronto. **Você não copia token nenhum.**
+
+**Deu certo quando:** dentro do Claude você digita `/mcp` e o `hostinger` aparece conectado. Se
+aparecer *"failed"*, rode `/mcp` de novo e autorize — sem isso, todos os passos seguintes viram
+trabalho manual no painel.
+
+> 📌 **São duas IAs diferentes, e confundir as duas atrapalha muito.** O **Claude Code** é esta IA
+> aqui, no terminal, que instala o servidor. A **IA dentro do n8n** é outra coisa: é a que vai rodar
+> as suas automações depois (responder cliente, classificar, resumir). Nesta etapa só existe a
+> primeira.
+
+⛔ **A partir de agora o agente pode gastar dinheiro na sua conta.** Isso não é motivo para medo, é
+motivo para entender: ele é obrigado a mostrar o que vai contratar e esperar o seu "pode" — mas se
+você disser "compra" sem olhar, ele usa a forma de pagamento padrão da conta.
 
 ---
 
-## 1. A chave SSH — **antes** de criar a máquina
+## 1. O domínio — o nome
 
-> *"cria uma chave SSH pra minha VPS nova"*
+> *"registra o domínio seudominio.com.br na minha conta"* — ou use um que você já tem.
 
-🔴 **Isto tem que ser feito antes.** A chave é injetada quando a máquina nasce. Anexar chave a uma
-VPS **já criada não funciona** — o painel responde que deu certo e ela simplesmente não entra.
+🔴 **Sem domínio não existe cadeado.** O certificado gratuito (Let's Encrypt) **não é emitido para
+endereço de número**. Sem cadeado o navegador acusa site inseguro, o WhatsApp recusa o webhook, e
+metade das ferramentas simplesmente não funciona.
+
+Você não precisa de um domínio bonito nem do nome da sua marca. Qualquer nome barato serve — ele vai
+ser o endereço das suas ferramentas internas.
+
+**Deu certo quando:** o domínio aparece na sua conta como *ativo* e o agente consegue listar a zona
+de DNS dele. Domínio recém-registrado leva de minutos a algumas horas para responder no mundo
+inteiro — por isso ele vem **antes** da máquina, e não depois.
+
+### Os endereços que você vai usar
+
+Decida agora, porque eles entram na configuração:
+
+| Ferramenta | O que é | Endereço sugerido |
+|---|---|---|
+| Portainer (a janela da máquina) | o painel que mostra o que está rodando | `portainer.seudominio.com.br` |
+| Chatwoot | a caixa onde as conversas chegam | `chat.seudominio.com.br` |
+| n8n | as automações rodando sozinhas | `n8n.` **e** `webhook.seudominio.com.br` |
+| NocoDB | a planilha que é banco de dados | `noco.seudominio.com.br` |
+| Evolution API | o WhatsApp por QR Code | `evo.seudominio.com.br` |
+
+🔴 **Escolha o nome definitivo agora.** Trocar depois é caro: ele fica gravado em link salvo, em
+configuração de serviço e no webhook do WhatsApp.
+
+---
+
+## 2. 🔴 A chave SSH — **antes** de a máquina existir
+
+> *"cria uma chave SSH pra minha VPS nova e cadastra na minha conta"*
+
+A chave SSH é a chave da casa: um par de arquivos que substitui a senha. A máquina só abre a porta
+para quem tem o arquivo.
+
+🔴 **Esta é a trava número um deste kit.** A chave é injetada **no momento em que a máquina nasce**.
+Anexar chave a uma VPS **já criada não funciona** — e o pior: a conta responde *sucesso*, com corpo
+vazio, e a chave simplesmente não entra. Você só descobre quando tenta entrar e é recusado.
 
 Se você já errou isso: dá para colar a chave pública em `~/.ssh/authorized_keys` usando o terminal
-que o painel do provedor abre no navegador.
+que o painel do provedor abre dentro do navegador. Ou reinstalar o sistema da máquina com a chave
+anexada — se ela ainda estiver vazia, é mais rápido.
+
+**Deu certo quando:** o arquivo existe no seu computador (`~/.ssh/minha-vps`) **e** a chave pública
+aparece cadastrada na sua conta do provedor.
+
+⛔ **A parte privada da chave nunca sai do seu computador.** Não cole em chat, não mande por e-mail,
+não versione. Se ela vazar, a casa é de quem tiver o arquivo.
 
 ---
 
-## 2. Criar a VPS
+## 3. A máquina
+
+> *"sobe o postinstall desta pasta como script de pós-instalação, compra uma KVM 2 com Ubuntu 24.04
+> no data center mais perto de São Paulo, usa a minha chave SSH e liga o backup automático"*
+
+Duas coisas acontecem aqui, e é bom saber que são **duas**: **comprar** (a fatura) e **provisionar**
+(instalar o sistema na máquina). A chave SSH e o script de pós-instalação entram na segunda.
 
 | Campo | Escolha | Por quê |
 |---|---|---|
-| Plano | **KVM 2** (2 vCPU · 8 GB · 100 GB) | o menor não aguenta — veja o README |
-| Sistema | **Ubuntu 24.04 LTS** | não a versão mais nova: o que quebra em versão nova não é o Docker, é o que está em volta |
-| Chave SSH | a que você acabou de criar | |
-| Script de pós-instalação | o `postinstall.sh` desta pasta | roda sozinho no primeiro boot |
+| Plano | **KVM 2** — 2 vCPU · 8 GB · 100 GB | 🔴 o mais barato não serve: só o Chatwoot reserva 4,25 GB, antes do sistema |
+| Sistema | **Ubuntu 24.04 LTS** | não a versão mais nova. O que quebra em versão nova não é o Docker, é tudo o que está em volta |
+| Chave SSH | a que você acabou de criar | é a única forma de entrar |
+| Script de pós-instalação | o `postinstall.sh` desta pasta | roda sozinho no primeiro boot: instala o Docker, cria o Swarm e fecha o SSH |
+| Backup automático | **ligado** | é o único que sobrevive a perder a máquina inteira |
 
-⚠️ Se o painel recusar o script com **erro 403**, não é tamanho: o firewall do provedor implica com
-os trechos de segurança. A saída é colar o script empacotado em base64 dentro de um envelope de
-seis linhas — peça ao agente: *"empacota o postinstall pro painel"*.
+⏸️ **O agente vai parar e pedir confirmação antes de comprar.** É de propósito. Confira plano, preço
+e período antes de dizer "pode".
 
-**Deu certo quando:** a máquina fica *running* e você recebe o IP.
+⚠️ **Se o painel recusar o script com erro 403**, não é tamanho: o firewall do provedor implica com
+os trechos de segurança que existem lá dentro. A saída é mandar o script empacotado em base64 dentro
+de um envelope de seis linhas — peça: *"empacota o postinstall pro painel"*.
+
+⚠️ **Sobre o "mínimo" que a documentação de qualquer software promete:** número de documentação vem
+com um "para quê" embutido. O Chatwoot diz que 4 GB bastam — é o limiar de *sobreviver*, não de
+*funcionar com mais alguma coisa junto*. Sempre pergunte: **mínimo para quê?**
+
+**Deu certo quando:** a máquina aparece como *running* e você recebe o IP.
 
 ---
 
-## 3. Fechar a máquina — **antes** de instalar qualquer coisa
+## 4. Fechar a máquina — **antes** de instalar qualquer coisa
 
-No firewall do provedor, libere **22, 80 e 443**. Nada mais.
+> *"cria um firewall liberando só 22, 80 e 443, aplica nessa VPS e me mostra o resultado"*
 
-> *"fecha minha VPS deixando só 22, 80 e 443"*
+Três portas: 22 (a sua entrada), 80 e 443 (o site). Nada mais.
 
-🔴 **Use o firewall do painel, não o de dentro da máquina.** Uma regra errada no firewall de dentro
-te tranca do lado de fora do seu próprio servidor, e só se sai disso pelo console de recuperação.
-Errou no painel? Você clica e corrige.
+🔴 **Use o firewall do painel do provedor, não o de dentro da máquina.** Uma regra errada no firewall
+de dentro te tranca do lado de fora do seu próprio servidor, e só se sai disso pelo console de
+recuperação. Errou no painel? Você clica e corrige.
 
 ⚠️ O provisionamento de alguns provedores **reabre o login de root por senha** — é o template deles,
 não erro seu. O `postinstall.sh` corrige isso, e o arquivo de correção precisa começar com `01-` no
-nome (o SSH lê a pasta em ordem alfabética e vale o primeiro valor que encontra).
+nome (o SSH lê a pasta em ordem alfabética e vale o **primeiro** valor que encontra).
 
-**Deu certo quando:** `ss -tlnp` na máquina mostra só 22, 80 e 443 escutando para fora.
-
----
-
-## 4. Apontar os endereços
-
-Crie dois registros **A**, cada um apontando para o IP da VPS:
-
-```
-portainer   →   <IP da sua VPS>
-chat        →   <IP da sua VPS>
-```
-
-🔴 **Acrescente, não sobrescreva.** Se o domínio já é usado para e-mail, mexer errado na zona
-derruba o e-mail da empresa. Peça ao agente para listar a zona antes e depois: tem que ter os
-antigos **+ 2**.
-
-**Deu certo quando:** os dois nomes resolvem para o seu IP.
+**Deu certo quando:** o agente mostra a lista de portas da máquina com só 22, 80 e 443 escutando
+para fora.
 
 ---
 
-## 5. Enviar a pasta e subir a base
+## 5. Apontar os endereços (DNS)
+
+> *"tira um snapshot da zona de DNS e cria o registro A de portainer apontando pro IP da VPS"*
+
+Um registro **A** para cada endereço da tabela da §1, todos apontando para o mesmo IP.
+
+🔴 **Acrescente, nunca sobrescreva.** Se esse domínio já serve o e-mail da empresa, mexer errado na
+zona **derruba o e-mail** — e ninguém percebe na hora. Peça ao agente para listar a zona antes e
+depois: tem que ter os registros antigos **+ os novos**.
+
+⚠️ Se o domínio está em **outro registrador**, o agente não alcança a zona pelo MCP do provedor da
+VPS: nesse caso os registros se criam no painel de quem hospeda o DNS, e o resto do processo não
+muda em nada.
+
+**Deu certo quando:** o nome resolve para o seu IP. Pode levar alguns minutos.
+
+---
+
+## 6. A base — Traefik e Portainer
 
 ```bash
-cp vps.env.exemplo vps.env      # e preencha os dois hosts e o seu e-mail
+cp vps.env.exemplo vps.env      # e preencha os endereços e o seu e-mail
 ```
 
 > *"envia essa pasta pra minha VPS e sobe o Traefik e o Portainer"*
 
+O que sobe aqui não é ferramenta de trabalho — é o **chão** onde todas as outras vão pisar:
+
+- **Traefik** é o porteiro. Toda visita da internet bate nele, e é ele quem pede e renova o
+  certificado (o cadeado) sozinho, de graça. Nenhuma outra peça fala com a internet.
+- **Portainer** é a janela: a tela onde você vê o que está rodando sem abrir terminal.
+
 ⚠️ **Se você usa Windows:** os arquivos chegam com uma marca invisível no fim de cada linha e o
 Linux reclama de "comando não encontrado" em lugares sem sentido. É a causa mais provável de um
-deploy que falha sem explicação. O agente já corrige, mas se você criar um arquivo novo, lembre.
+deploy que falha sem explicação. O agente já corrige; se você criar um arquivo novo, lembre.
 
 **Deu certo quando:** `https://portainer.seudominio.com.br` abre **com cadeado**, e o emissor do
 certificado é o Let's Encrypt.
 
-Se aparecer "TRAEFIK DEFAULT CERT" em vez disso, o DNS ainda não propagou. **Espere** — não recrie
-o serviço, porque quem emite o certificado tem trava de tentativa e insistir só atrasa.
+Se aparecer "TRAEFIK DEFAULT CERT" no lugar, o DNS ainda não propagou. **Espere** — não recrie o
+serviço: quem emite o certificado tem trava de tentativa (5 falhas por hora, por domínio) e insistir
+só atrasa.
+
+🔴 **O Portainer se tranca em 5 minutos.** Se ninguém definir a senha do administrador nesse prazo,
+ele responde *"initialization timeout"* e só volta reiniciando o serviço. Neste kit a senha é
+definida no próprio deploy — a máquina nasce com dono.
 
 ---
 
-## 5.5. 🔴 Peça ao Claude para conferir a documentação oficial
+## 6.5. 🔴 Antes de instalar qualquer aplicação, peça a conferência
 
-Antes de instalar qualquer aplicação, peça:
+> *"antes de instalar, pesquisa a documentação oficial e as releases desse projeto no GitHub e me
+> diz se mudou alguma coisa desde que este kit foi escrito"*
 
-> *"antes de instalar, pesquisa a documentação oficial e as releases desse projeto no GitHub
-> e me diz se mudou alguma coisa desde que este kit foi escrito"*
+Os arquivos daqui **fixam versão** — de propósito, para nada trocar sozinho no meio da noite. O
+efeito colateral é que eles envelhecem: o projeto renomeia uma variável, muda o jeito de instalar,
+publica um aviso de segurança.
 
-Os arquivos daqui fixam versão — de propósito, para nada trocar sozinho no meio da noite. O
-efeito colateral é que eles envelhecem: o projeto renomeia uma variável, muda o jeito de
-instalar, publica um aviso de segurança. Trinta segundos de leitura evitam uma hora de erro
-que não faz sentido.
+**Deu certo quando:** o agente disser explicitamente uma das duas coisas — *"conferi, a versão
+fixada é a atual e não há aviso de segurança"* ou *"mudou X, e eu recomendo Y"*. Se ele não falou
+nenhuma das duas, ele não conferiu.
 
-**Deu certo quando:** o Claude te disser explicitamente uma das duas coisas — *"conferi, a
-versão fixada é a atual e não há aviso de segurança"* ou *"mudou X, e eu recomendo Y"*. Se
-ele não falou de nenhuma das duas, ele não conferiu.
-
-⛔ E se ele achar versão mais nova: **a decisão de subir é sua, não dele.** A versão nova pode
-ter tirado algo que você usa.
+⛔ E se ele achar versão mais nova: **a decisão de subir é sua, não dele.** A versão nova pode ter
+tirado algo que você usa. A pergunta certa nunca é *"qual é a última?"*, é **"o que a nova traz que
+eu quero, e o que eu perco?"**
 
 ---
 
-## 6. Subir o Chatwoot
+## 7. A ferramenta — uma de cada vez
 
-> *"instala o Chatwoot em chat.seudominio.com.br"*
+A máquina está de pé e **vazia**, de propósito. Agora cada ferramenta é um ciclo curto, e é sempre o
+mesmo ciclo:
 
-O agente gera as três senhas **dentro da máquina** (elas nunca passam pelo seu computador) e sobe
-quatro serviços: banco, fila, aplicação e o trabalhador de segundo plano. Nenhum deles fica
-exposto na internet.
-
----
-
-## 7. 🔴 Preparar o banco — senão ele sobe e morre em loop
-
-```bash
-bash /opt/infra/chatwoot-rails.sh bundle exec rails db:chatwoot_prepare
+```
+   registro A do subdomínio  ->  segredos em /opt/infra/<app>/  ->  conferir a doc oficial
+        ->  bash /opt/infra/deploy-<app>.sh  ->  abrir no navegador e ver o cadeado
 ```
 
-**Por que isso não é automático:** o arquivo de inicialização da imagem oficial só espera o banco
-responder e executa — **ele não cria as tabelas**. A documentação oficial esconde isso atrás de um
-comando que não existe no jeito que a gente instalou.
-
-O sintoma, se você pular: `relation "installation_configs" does not exist`, com os serviços
-reiniciando sem parar. O erro fala de tabela e não fala de migração — é por isso que custa meia
-hora para quem não sabe.
-
----
-
-## 8. 🔴 Criar o dono E fechar a porta de trás — o mesmo comando
-
-```bash
-CW_SENHA='UmaSenhaForte@2026' bash /opt/infra/chatwoot-criar-usuario.sh \
-    dono@seudominio.com "Seu Nome" superadmin
-```
-
-**Leia isto antes de rodar.** Uma instalação nova de Chatwoot nasce com uma tela de *criar o dono da
-instalação* aberta na internet, sem senha nenhuma. Quem chegasse primeiro criaria um administrador
-com poder total na **sua** instância.
-
-E o detalhe que pega todo mundo: o que controla essa tela **não está no banco de dados**, está na
-memória rápida. Criar o dono pelo caminho normal **não apaga aquilo**. Você faz tudo certo e a porta
-continua aberta. Por isso, aqui, criar e fechar são uma operação só.
-
-⚠️ Dê a esse usuário um **e-mail só dele**. Por dentro, o super administrador e os atendentes são a
-mesma tabela e disputam endereço — não promova o login que o time usa para atender.
-
-**Deu certo quando:** abrir `https://chat.seudominio.com.br/installation/onboarding` numa aba
-anônima e ser **redirecionado para o login**.
-
----
-
-## 9. Criar quem vai atender
-
-```bash
-CW_SENHA='OutraSenha@2026' bash /opt/infra/chatwoot-criar-usuario.sh \
-    pessoa@seudominio.com "Nome da Pessoa" agent      # ou administrator
-```
-
-⚠️ A senha exige **minúscula, MAIÚSCULA, número e símbolo**. Senha aleatória "limpa" é recusada —
-depois de um minuto carregando.
-
-⚠️ Isto é por comando porque **não há servidor de e-mail** nesta instalação. O convite pela tela
-dispararia um e-mail que não sai. O custo: ninguém recupera a própria senha sozinho.
-
----
-
-## 10. O backup — e por que ele tem duas metades
-
-O `deploy-chatwoot.sh` já instalou o backup diário. Mas entenda o que ele guarda:
-
-| Metade | O que é | Guarda por |
+| O que instalar | Para quê | Passo a passo |
 |---|---|---|
-| o banco | conversas, contatos, etiquetas | 7 dias |
-| os anexos | as fotos e arquivos que o cliente mandou | para sempre |
+| **Chatwoot** | atendimento: várias pessoas na mesma caixa, histórico que não expira | [docs/instalar-chatwoot.md](docs/instalar-chatwoot.md) |
+| **n8n** | automação: o que precisa acontecer às 3 da manhã sem ninguém acordado | [docs/instalar-n8n.md](docs/instalar-n8n.md) |
+| **NocoDB** | a planilha da equipe que na verdade já virou banco de dados | [docs/instalar-nocodb.md](docs/instalar-nocodb.md) |
+| **Evolution API** | WhatsApp por QR Code ⚠️ não é o oficial: leia o §0 do documento antes | [docs/instalar-evolution.md](docs/instalar-evolution.md) |
+| **Qualquer projeto do GitHub** | o que ninguém vende pronto para o seu problema | [docs/instalar-do-github.md](docs/instalar-do-github.md) |
 
-🔴 **O backup do banco sozinho não é backup.** O Chatwoot guarda no banco só o **endereço** do
-arquivo anexado, não o arquivo. Restaurar só o banco devolve todas as conversas com **todos os
-anexos quebrados**.
+📌 **E o banco de dados?** Ele não entra nesta lista de propósito: a recomendação é **contratar**, não
+instalar aqui — o porquê está em [docs/onde-o-banco-mora.md](docs/onde-o-banco-mora.md).
 
-🔴 **E nada disso cobre perder a máquina** — os dois moram na própria VPS. Vá no painel do provedor e
-confirme que o backup automático está ligado. **Snapshot não é backup:** ele expira em 24 horas e é
-rede de proteção da manutenção do dia.
+⚠️ **Uma de cada vez, sempre.** As ferramentas convivem bem na mesma máquina, mas instalar três de
+uma vez transforma qualquer erro num quebra-cabeça: você não sabe qual peça falhou. Suba uma,
+confirme que abre com cadeado, e só então a próxima.
+
+⚠️ **Antes da terceira aplicação, olhe a memória.** Peça: *"quanto de memória sobrou?"*. Não é para
+otimizar nada — é para você saber se a próxima cabe.
 
 ---
 
-## 11. Provar que está no ar — e não se enganar
+## 8. Provar que está no ar — e não se enganar sozinho
 
 > *"roda a lista de aceitação"*
 
 | O quê | Esperado |
 |---|---|
 | serviços saudáveis | histórico **sem falha recente** |
-| site responde | com certificado válido do Let's Encrypt |
-| cadastro público | **bloqueado** |
-| tela de criar dono | **fechada** |
-| login com a senha certa | entra, com o papel correto |
-| login com senha errada | recusa |
-| backup | rodar na mão e ver o arquivo aparecer, com tamanho |
-| portas | **continuam só 22, 80 e 443** |
+| o site responde | com certificado válido do Let's Encrypt |
+| a máquina está fechada | **só** 22, 80 e 443 escutando |
+| backup | rodar na mão e ver o arquivo aparecer, **com tamanho** |
 
-⚠️ **Duas formas de se enganar sozinho:**
+⚠️ **Duas formas clássicas de se enganar:**
 
 - O painel dizendo **"1 de 1"** não prova saúde — um serviço reiniciando em loop aparece assim
   durante os segundos em que a tentativa nova está viva. Quem conta a verdade é o **histórico**.
-- Abrir a **tela de cadastro** e ver que ela carrega não prova nada: ela abre mesmo bloqueada,
-  porque quem decide é a parte visual. A prova é bater na interface de programação.
+- Uma tela que **abre** não prova que ela está liberada nem que está bloqueada. A prova é bater na
+  interface de programação, não olhar a página.
 
 ---
 
-## E depois — a segunda e a terceira aplicação
+## 9. Depois — a manutenção que existe de verdade
 
-Com a base de pé, cada nova aplicação é o mesmo ciclo curto, e nenhuma mexe nas outras:
+Você trocou mensalidade por manutenção. É pouca, mas não é zero:
 
-1. criar o registro DNS do endereço dela (etapa 4);
-2. criar o arquivo de segredos em `/opt/infra/<app>/` (o `.env.exemplo` diz quais valores);
-3. pedir ao Claude para conferir a documentação oficial (etapa 5.5);
-4. `bash /opt/infra/deploy-<app>.sh`;
-5. abrir no navegador e conferir o cadeado.
-
-Para o **n8n** há uma diferença que pega todo mundo: são **dois** endereços, não um. Um é a
-tela onde você desenha o fluxo; o outro é o que recebe as chamadas de fora. Os dois precisam
-de registro A antes do deploy.
-
-## E depois
-
-- **Conectar o WhatsApp** ao Chatwoot é trabalho à parte, e vem depois — não antes.
-- **Instalar mais coisa** (n8n, banco, painel) usa a mesma base: é só mais um andar em cima.
-- **Manutenção:** o sistema instala correção de segurança sozinho, mas **não reinicia** a máquina. De
-  vez em quando: *"tem atualização pendente? precisa reiniciar?"*
+- **Atualização:** o sistema instala correção de segurança sozinho, mas **não reinicia** a máquina.
+  De vez em quando pergunte: *"tem atualização pendente? precisa reiniciar?"*
+- **Backup:** cada aplicação instala o seu, e ele mora **na própria máquina**. Confirme no painel do
+  provedor que o backup automático da VPS está ligado — é o único que sobrevive a perder a máquina.
+  🔴 **Snapshot não é backup:** ele expira e é rede de proteção da manutenção do dia.
+- **Versão:** o padrão é **ficar parado**. Só se atualiza quando a versão nova tem algo que você
+  quer, ou quando a atual está dando problema **constatado**.
