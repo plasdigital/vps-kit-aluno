@@ -160,10 +160,31 @@ Duas coisas acontecem aqui, e é bom saber que são **duas**: **comprar** (a fat
 | Campo | Escolha | Por quê |
 |---|---|---|
 | Plano | **KVM 2** — 2 vCPU · 8 GB · 100 GB | 🔴 o mais barato não serve: só o Chatwoot reserva 4,25 GB, antes do sistema |
-| Sistema | **Ubuntu 24.04 LTS** | não a versão mais nova. O que quebra em versão nova não é o Docker, é tudo o que está em volta |
+| Sistema | **Ubuntu 24.04 LTS** | duas escolhas numa linha só — o **Ubuntu** e o **LTS**. Explicadas logo abaixo |
+| Região | o data center **mais perto de quem usa** | não de onde você mora: é a latência que o seu atendente sente o dia inteiro |
 | Chave SSH | a que você acabou de criar | é a única forma de entrar |
 | Script de pós-instalação | o `postinstall.sh` desta pasta | roda sozinho no primeiro boot: instala o Docker, cria o Swarm e fecha o SSH |
 | Backup automático | **ligado** | é o único que sobrevive a perder a máquina inteira |
+
+### Por que Ubuntu, e por que LTS
+
+Duas perguntas diferentes, e quase todo mundo responde as duas com um encolher de ombros.
+
+**Por que Ubuntu e não outro Linux?** Tecnicamente, tanto faz: o Docker suporta oficialmente Ubuntu,
+Debian, Fedora e RHEL, e o que este kit instala roda igual em qualquer um deles. O motivo é outro —
+**quando der erro às 23h, a resposta que existe na internet foi escrita para Ubuntu.** O fórum do
+Chatwoot, a issue do n8n, o README do projeto que você achou no GitHub: todos assumem `apt` e
+Ubuntu. Debian é mais enxuto e igualmente sólido, e te deixa mais sozinho na hora do problema.
+
+**Por que LTS, e não a versão mais nova?** *LTS* quer dizer *long term support*: **5 anos** de
+correção de segurança sem você trocar de sistema. A versão comum do Ubuntu dura **9 meses** — você
+estaria migrando o servidor uma vez por ano, de graça.
+
+**E entre uma LTS e a LTS seguinte, fique na anterior por um tempo.** O que quebra numa versão
+recém-lançada não costuma ser o Docker: é tudo o que está em volta — o script do provedor, a imagem
+que assume o nome da versão antiga, o tutorial que o seu agente vai ler. É a mesma régua do resto
+deste kit: **a última versão não é a melhor versão.** Troque quando alguém já tiver rodado este
+caminho inteiro nela.
 
 ⏸️ **O agente vai parar e pedir confirmação antes de comprar.** É de propósito. Confira plano, preço
 e período antes de dizer "pode".
