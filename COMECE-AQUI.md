@@ -68,20 +68,47 @@ claude
 **Deu certo quando:** a pasta abriu e o agente respondeu. Ele já leu o `CLAUDE.md` que está aqui
 dentro — é por isso que você conversa em português em vez de decorar comando.
 
-### 0.9 — 🔴 Dar mão ao agente: o MCP do provedor
+### 0.9 — 🔴 Dar mão ao agente: a chave da API do provedor
 
 Até aqui o agente só sabe *falar*. Este passo é o que dá a ele **mão** na sua conta de hospedagem:
 comprar máquina, abrir firewall, criar registro de DNS, tirar snapshot.
 
+Quase todo provedor tem uma **API**, e é por ela que o agente trabalha. Gere um token no painel da
+sua conta (procure por *API*, *tokens* ou *desenvolvedor*) e guarde num arquivo que **não vai para
+o git** — o `.gitignore` desta pasta já bloqueia `*.env`:
+
 ```bash
-claude mcp add --transport http hostinger https://mcp.hostinger.com
+echo 'PROVEDOR_API_TOKEN=cole-o-token-aqui' > provedor.env
 ```
 
-O navegador abre, você autoriza com a sua conta e pronto. **Você não copia token nenhum.**
+Depois é só dizer ao agente que o token está lá. Ele lê o arquivo na hora de chamar a API.
 
-**Deu certo quando:** dentro do Claude você digita `/mcp` e o `hostinger` aparece conectado. Se
-aparecer *"failed"*, rode `/mcp` de novo e autorize — sem isso, todos os passos seguintes viram
-trabalho manual no painel.
+**Deu certo quando:** você pede *"lista as minhas VPS"* e ele responde com a sua conta de verdade.
+
+⚠️ **Duas coisas que salvam tempo com API de provedor:**
+- Muitas ficam atrás de um firewall que **recusa cliente sem identificação** — o sintoma é um `403`
+  falando de *"browser signature"*, e não tem nada a ver com o seu token. Manda um `User-Agent`
+  qualquer no cabeçalho e passa.
+- **Erro de senha costuma vir com a lista de símbolos aceitos.** Senha aleatória comum é recusada;
+  leia a mensagem, ela diz exatamente quais caracteres precisa ter.
+
+#### O MCP do provedor — opcional
+
+Alguns provedores oferecem um MCP, que é um atalho: o agente ganha as mesmas ações sem você gerar
+token nenhum.
+
+```bash
+claude mcp add --transport http <provedor> https://mcp.<provedor>.com
+```
+
+**É conveniente, mas não conte com ele.** Numa sessão real de 08/set/2026 os oito servidores MCP do
+provedor caíram com *"connection closed"* enquanto **a API respondia normalmente** — a instalação
+inteira foi feita pela API, sem perder um passo. Por isso o caminho principal deste kit é a API, e
+o MCP é o atalho de quem tem ele funcionando.
+
+> 📌 **Você não precisa de nenhum dos dois para instalar.** Comprar a máquina, abrir o firewall e
+> criar o DNS também se faz **clicando no painel** do provedor. A API existe para o agente fazer por
+> você e para o passo a passo ficar repetível — não porque o painel esteja errado.
 
 > 📌 **São duas IAs diferentes, e confundir as duas atrapalha muito.** O **Claude Code** é esta IA
 > aqui, no terminal, que instala o servidor. A **IA dentro do n8n** é outra coisa: é a que vai rodar
@@ -136,6 +163,11 @@ para quem tem o arquivo.
 🔴 **Esta é a trava número um deste kit.** A chave é injetada **no momento em que a máquina nasce**.
 Anexar chave a uma VPS **já criada não funciona** — e o pior: a conta responde *sucesso*, com corpo
 vazio, e a chave simplesmente não entra. Você só descobre quando tenta entrar e é recusado.
+
+Foi conferido de novo em 08/set/2026, numa máquina real: o endpoint de anexar chave respondeu
+`HTTP 200` com um corpo de objeto zerado (`id: 0`, `name: ""`), e o SSH seguiu recusando com
+`Permission denied (publickey)`. **Sucesso na resposta não é prova de nada aqui** — a prova é
+entrar.
 
 Se você já errou isso: dá para colar a chave pública em `~/.ssh/authorized_keys` usando o terminal
 que o painel do provedor abre dentro do navegador. Ou reinstalar o sistema da máquina com a chave
@@ -230,7 +262,7 @@ Um registro **A** para cada endereço da tabela da §1, todos apontando para o m
 zona **derruba o e-mail** — e ninguém percebe na hora. Peça ao agente para listar a zona antes e
 depois: tem que ter os registros antigos **+ os novos**.
 
-⚠️ Se o domínio está em **outro registrador**, o agente não alcança a zona pelo MCP do provedor da
+⚠️ Se o domínio está em **outro registrador**, o agente não alcança a zona pela API do provedor da
 VPS: nesse caso os registros se criam no painel de quem hospeda o DNS, e o resto do processo não
 muda em nada.
 
@@ -269,22 +301,29 @@ definida no próprio deploy — a máquina nasce com dono.
 
 ---
 
-## 6.5. 🔴 Antes de instalar qualquer aplicação, peça a conferência
+## 6.5. 🔴 Antes de instalar qualquer aplicação, o agente descobre a versão
 
-> *"antes de instalar, pesquisa a documentação oficial e as releases desse projeto no GitHub e me
-> diz se mudou alguma coisa desde que este kit foi escrito"*
+> *"antes de instalar, descobre a última versão estável desse projeto, confere os avisos de
+> segurança e preenche o vps.env"*
 
-Os arquivos daqui **fixam versão** — de propósito, para nada trocar sozinho no meio da noite. O
-efeito colateral é que eles envelhecem: o projeto renomeia uma variável, muda o jeito de instalar,
-publica um aviso de segurança.
+Os arquivos daqui vêm com a versão em branco (`PREENCHER`). **Este kit não decide versão por você**
+— quem descobre o número é o agente, na hora de instalar, olhando as releases e os advisories de
+segurança do projeto.
 
-**Deu certo quando:** o agente disser explicitamente uma das duas coisas — *"conferi, a versão
-fixada é a atual e não há aviso de segurança"* ou *"mudou X, e eu recomendo Y"*. Se ele não falou
-nenhuma das duas, ele não conferiu.
+É assim porque o contrário já falhou: quando o kit trazia versão fixa, ele envelheceu e passou a
+ensinar, sem avisar, versões com falha conhecida. O protocolo inteiro está em
+[docs/antes-de-instalar.md](docs/antes-de-instalar.md).
 
-⛔ E se ele achar versão mais nova: **a decisão de subir é sua, não dele.** A versão nova pode ter
-tirado algo que você usa. A pergunta certa nunca é *"qual é a última?"*, é **"o que a nova traz que
-eu quero, e o que eu perco?"**
+**Deu certo quando:** o agente disser **qual versão vai instalar, como descobriu, e o que achou de
+segurança**. Se ele não falou as três coisas, ele não conferiu.
+
+⛔ E se a versão mais nova tiver aviso aberto ou mudança que quebra: **a decisão é sua, não dele.**
+A pergunta certa nunca é *"qual é a última?"*, é **"o que a nova traz que eu quero, e o que eu
+perco?"**
+
+📌 **Depois de instalado, a régua vira outra: o padrão é ficar parado.** Descobrir a última versão
+vale para a instalação. Atualizar depois só por dois motivos — a nova tem algo que você quer, ou a
+atual está dando problema constatado (e aviso de segurança conta como problema constatado).
 
 ---
 

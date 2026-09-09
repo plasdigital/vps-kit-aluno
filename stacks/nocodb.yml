@@ -11,8 +11,10 @@
 #     Se o NocoDB for invadido, o estrago para na base dele.
 #   - NC_AUTH_JWT_SECRET gerado por você, em vez de deixar o NocoDB inventar
 #     um sozinho — assim ele sobrevive a recriar o container.
-#   - Versão fixada, nunca `latest`. E a versão que se fixa é a que está rodando
-#     estável em algum lugar, não a mais nova que existe.
+#   - Versão preenchida por VOCÊ no vps.env, na hora de instalar: a última
+#     estável, conferida contra os avisos de segurança do projeto. Depois
+#     disso ela fica fixa — `latest` trocaria de versão sozinha no primeiro
+#     restart, sem ninguém pedir.
 #
 # Deploy: deploy-nocodb.sh (não rode docker stack deploy na mão — as
 # variáveis ${...} saem de vps.env e de /opt/infra/nocodb/nocodb.env, que

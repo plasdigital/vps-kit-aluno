@@ -7,35 +7,42 @@ e qualquer projeto que o dono traga do GitHub. Você é o operador; o dono não 
 **Instale só o que ele pediu, um de cada vez.** As aplicações são independentes: cada uma tem
 stack, banco e backup próprios. Subir várias "já que estamos aqui" é o erro mais caro deste kit.
 
-## 🔴 A regra de ouro: este kit não é a última palavra
+## 🔴 A regra de ouro: este kit não decide a versão
 
-**Você não instala nada de memória, e não instala só a partir destes arquivos.** Eles foram
-escritos numa data e fixam versão. Antes de subir **qualquer** serviço — inclusive os que já vêm
-prontos aqui — pesquise a documentação oficial de hoje e conte ao dono o que achou.
+**Os arquivos vêm com a versão em branco — `PREENCHER`.** Quem descobre o número é você, na hora de
+instalar. Não instale de memória, e não instale só a partir destes arquivos.
 
-O protocolo completo, com o que procurar e o que fazer com o resultado, está em
-**`docs/antes-de-instalar.md`**. O resumo:
+Antes de subir **qualquer** serviço, pesquise e conte ao dono:
 
-1. **Mudança que quebra** entre a versão fixada aqui e a atual.
-2. **Aviso de segurança** na versão fixada.
-3. **Pré-requisito novo** — o projeto passou a exigir algo que não existia.
-4. **Mudança no jeito de instalar** — compose diferente, etapa que saiu do processo de inicialização.
-5. **O projeto ainda é mantido?**
+1. **Qual é a última versão estável** do projeto — releases oficiais, não memória.
+2. **Advisories de segurança** que atinjam essa versão — a faixa afetada e a versão corrigida.
+3. **Mudança que quebra** em relação ao que estes arquivos descrevem.
+4. **Pré-requisito novo** — o projeto passou a exigir algo que não existia.
+5. **Mudança no jeito de instalar** — compose diferente, etapa que saiu da inicialização.
+6. **O projeto ainda é mantido?**
 
-E as três formas de agir:
+Depois preencha o `vps.env` com o número e **diga qual escolheu e por quê**. O protocolo completo
+está em **`docs/antes-de-instalar.md`**.
 
-- Achou diferença → **conte em português, com o link**, e recomende. Nunca conserte calado.
-- Não achou nada → siga o kit **e diga que conferiu**. *"Conferi as releases, a versão fixada é a
-  atual e não há aviso de segurança"* custa 30 segundos.
-- ⛔ **Nunca troque a versão fixada por conta própria**, nem por `latest`. Subir de versão é decisão
-  do dono, sempre — a nova pode ser regressão.
+- Achou aviso aberto ou mudança que quebra → **conte em português, com o link**, e recomende.
+  Nunca conserte calado.
+- Não achou nada → instale a última estável **e diga**: *"a última é a X, sem advisory aberto"*.
+- ⛔ **Nunca use `latest`.** Ele troca de versão sozinho no primeiro restart, e o dono descobre pelo
+  sintoma. A versão é nova na instalação e fixa depois dela.
+- ⛔ **Nunca deixe `PREENCHER`** — o deploy falha com `manifest unknown`, de propósito.
+- ⛔ **Postgres e Redis já vêm preenchidos e ficam.** Trocar o major do banco é migrar dado.
+
+Depois de instalado, a régua inverte: **o padrão é ficar parado.** Só se atualiza quando a nova tem
+algo que o dono quer, ou quando a atual está dando problema constatado no log — e aviso de
+segurança conta como problema constatado.
 
 Isto vale **igualmente** para projeto de terceiro que ele trouxer do GitHub, e vale **mais ainda**
 para a Evolution API, que muda de forma com frequência.
 
 ## Etapa 0 — provisionar a máquina (quando ela ainda não existe)
 
-Com o MCP do provedor conectado, você tem mão na conta dele: comprar VPS, cadastrar chave, criar
+Com a API do provedor (token no `provedor.env`; o MCP dele, se houver, é atalho
+opcional) você tem mão na conta: comprar VPS, cadastrar chave, criar
 firewall, mexer no DNS, tirar snapshot. A ordem certa está em `COMECE-AQUI.md`, e três pontos não
 se negociam:
 
@@ -53,7 +60,7 @@ o e-mail e ninguém percebe na hora.
 
 | Arquivo | O que tem | Onde fica |
 |---|---|---|
-| `vps.env` | domínio, hosts, versões fixadas. **Sem segredo.** | nesta pasta e em `/opt/infra/` na VPS |
+| `vps.env` | domínio, hosts, versões (você preenche na instalação). **Sem segredo.** | nesta pasta e em `/opt/infra/` na VPS |
 | `chatwoot.env` | as três senhas do Chatwoot | **só na VPS**, em `/opt/infra/chatwoot/`, `chmod 600` |
 | `n8n.env` | senha do banco, do Redis e a chave de criptografia | **só na VPS**, em `/opt/infra/n8n/`, `chmod 600` |
 | `nocodb.env` | senha do banco e o segredo de sessão | **só na VPS**, em `/opt/infra/nocodb/`, `chmod 600` |
@@ -183,7 +190,7 @@ isolamento é o que faz um problema parar numa aplicação em vez de derrubar to
 | `relation "installation_configs" does not exist`, serviços em loop | o entrypoint do Chatwoot **não** cria o schema, apesar da documentação | `chatwoot-rails.sh bundle exec rails db:chatwoot_prepare` |
 | `bad gateway`, **sem nada no log** | label de rede errada: no Traefik v3 com Swarm é `traefik.swarm.network`, não `traefik.docker.network` — a antiga é ignorada em silêncio | corrigir a label na stack |
 | certificado aparece como "TRAEFIK DEFAULT CERT" | o DNS ainda não propagou | **esperar.** Não recriar o serviço: o Let's Encrypt tem backoff e insistir atrasa |
-| `docker service ls` mostrando `1/1` | pode ser um serviço reiniciando em loop — é a tarefa nova, viva por segundos | conferir com `docker service ps <serviço>` |
+| `docker service ls` mostrando `1/1` | pode ser um serviço reiniciando em loop **ou** um serviço que se recuperou deixando algo pela metade | `docker service ps <serviço>`. Viu `Failed`? pergunte **o que aquela falha não terminou** — não basta o serviço ter voltado |
 | `/app/auth/signup` respondendo `200` | não prova que o cadastro está aberto: o Rails serve o SPA em qualquer rota `/app/...` | testar `POST /api/v1/accounts` — deve dar `404` |
 | `Password must contain at least 1 special character` | senha gerada sem símbolo (`openssl rand -base64 \| tr -d '/+='` remove justamente eles) | gerar com símbolo |
 | Portainer: `Administrator initialization timeout` | ninguém preencheu a tela em 5 min | reiniciar o serviço dá outros 5 min; o padrão define a senha no deploy |
@@ -191,6 +198,26 @@ isolamento é o que faz um problema parar numa aplicação em vez de derrubar to
 | erro `403` ao colar o script de pós-instalação | o firewall do provedor bloqueia os trechos de hardening | usar o envelope em base64 (veja `docs/`) |
 | o webhook do n8n não chega, e o erro não fala de DNS | falta o registro A do **segundo** host (webhook) | criar o A e refazer o deploy |
 | credenciais do n8n ilegíveis depois de reinstalar | a `N8N_ENCRYPTION_KEY` mudou | não há recuperação: recriar credencial por credencial |
+| Portainer abre logando normal, mas diz **"No environment available for management"** | na primeira subida ele criou o admin e morreu ao registrar o ambiente, porque o `agent` ainda não resolvia no DNS do Swarm. O bloco de inicialização **só roda uma vez** — o serviço volta saudável e o ambiente nunca é criado | registrar por API (abaixo). Reiniciar o serviço **não** resolve: o admin já existe |
+| API do Portainer: `500 Unable to parse docker host` | falta o **esquema** na URL do ambiente — e a mensagem não diz isso | `tcp://tasks.agent:9001`, nunca `tasks.agent:9001` |
+| a API do provedor recusa a senha da máquina com um código tipo `VPS:2004` | a senha de root costuma exigir símbolo de uma **lista fechada**, e senha aleatória comum não tem nenhum deles | leia a mensagem: ela lista os símbolos aceitos |
+| a API do provedor devolve `403` falando de *"browser signature"* | não é o seu token — é o firewall dele recusando cliente sem identificação | mande um cabeçalho `User-Agent` qualquer |
+| o MCP do provedor não conecta (*"connection closed"*) | acontece, e não significa que você perdeu o acesso | use a API com o token; ela é o caminho principal deste kit |
+| `image: <projeto>:PREENCHER` → `manifest unknown` | você rodou o deploy sem descobrir a versão | é a rede de proteção funcionando: veja `docs/antes-de-instalar.md` |
+
+### Conserto: o Portainer que abre sem ambiente nenhum
+
+Roda **na VPS**, para a senha do admin não sair de lá. Troque `<PORTAINER_HOST>` pelo endereço dele:
+
+```bash
+SENHA=$(cat /opt/infra/portainer-admin-senha.txt)
+BODY=$(jq -n --arg u admin --arg p "$SENHA" '{Username:$u,Password:$p}')
+JWT=$(curl -s -X POST https://<PORTAINER_HOST>/api/auth         -H 'Content-Type: application/json' -d "$BODY" | jq -r .jwt)
+curl -s -X POST https://<PORTAINER_HOST>/api/endpoints -H "Authorization: Bearer $JWT"   -F Name=swarm-local -F EndpointCreationType=2 -F URL=tcp://tasks.agent:9001   -F TLS=true -F TLSSkipVerify=true -F TLSSkipClientVerify=true
+```
+
+**Deu certo quando** `GET /api/endpoints/<id>/docker/services` lista os serviços da máquina. O
+ambiente aparecer na lista **não basta** — ele pode existir sem conseguir falar com o Docker.
 
 ## Onde está escrito o porquê
 

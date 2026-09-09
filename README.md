@@ -10,10 +10,12 @@ ela já sabe se explicar para ele.
 
 ## 🔴 A regra que vale mais que todo o resto
 
-**Esta pasta não é a última palavra sobre nada.** Ela foi escrita numa data, com versões fixadas de
-propósito. Software muda toda semana. Por isso, **antes de instalar qualquer coisa — inclusive o
-que já vem pronto aqui — o seu agente vai pesquisar a documentação oficial de hoje** e te dizer o
-que mudou, se apareceu pré-requisito novo, se tem aviso de segurança.
+**Esta pasta não decide a versão de nada.** Os arquivos vêm com o campo de versão em branco
+(`PREENCHER`), e **quem descobre o número é o seu agente, na hora de instalar** — olhando a última
+versão estável e os avisos de segurança do projeto. Depois ela fica fixa no seu arquivo.
+
+Era o contrário até 08/set/2026, e mudou porque falhou: com as versões escritas aqui dentro, o kit
+envelheceu e passou a ensinar, calado, três versões com falha conhecida.
 
 Está tudo em **[docs/antes-de-instalar.md](docs/antes-de-instalar.md)**. É o documento mais
 importante da pasta, e é o que impede este kit de envelhecer em silêncio.
@@ -74,10 +76,11 @@ docs/                 os passos por ferramenta, e as decisões
 **1. Pesquisar antes de instalar não é opcional.** Veja a regra lá em cima. O agente que instala de
 memória instala a versão do ano passado.
 
-**2. As versões estão fixadas, com número.** Não é `latest`, e isso é de propósito: `latest` troca
-de versão sozinho no primeiro restart e você descobre pelo cliente reclamando. **O padrão é ficar
-parado** — só se atualiza quando a versão nova tem algo que você quer, ou quando a atual está dando
-problema de verdade.
+**2. A versão é nova na instalação, e fixa depois dela.** O agente descobre a última estável na
+hora de instalar e **grava o número** no seu `vps.env`. Não é `latest`, de propósito: `latest` troca
+de versão sozinho no primeiro restart e você descobre pelo cliente reclamando. Instalado, **o padrão
+é ficar parado** — só se atualiza quando a nova tem algo que você quer, ou quando a atual está dando
+problema de verdade (e aviso de segurança conta como problema).
 
 **3. Só o Traefik fala com a internet.** Banco, fila e todo o resto ficam escondidos atrás dele. O
 firewall libera três portas e nada mais. Toda ferramenta nova que você trouxer segue essa regra —

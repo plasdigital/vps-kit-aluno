@@ -16,7 +16,10 @@
 #     dono é por linha de comando. Configure quando tiver um e-mail de envio
 #     seu; emprestar a credencial de e-mail de outro serviço é o caminho
 #     curto que cobra caro depois.
-#   - Versão fixada, nunca `latest`.
+#   - Versão preenchida por VOCÊ no vps.env, na hora de instalar: a última
+#     estável, conferida contra os avisos de segurança do projeto. Depois
+#     disso ela fica fixa — `latest` trocaria de versão sozinha no primeiro
+#     restart, sem ninguém pedir.
 #
 # Deploy: deploy-n8n.sh (não rode docker stack deploy na mão — as
 # variáveis ${...} saem de vps.env e de /opt/infra/n8n/n8n.env, que
