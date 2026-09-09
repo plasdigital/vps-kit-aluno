@@ -25,7 +25,7 @@ importante da pasta, e é o que impede este kit de envelhecer em silêncio.
 | | O que | Quanto custa |
 |---|---|---|
 | 1 | **Claude Code** (plano Pro ou Max). Codex e Antigravity funcionam igual | US$ 20/mês |
-| 2 | Uma **conta no provedor de hospedagem** — é onde a máquina vai ser comprada | — |
+| 2 | Uma conta na **[Hostinger](https://www.hostg.xyz/aff_c?offer_id=6&aff_id=214984&url_id=5038)** — é onde a máquina vai ser comprada (cupom `PEDROALMEIDA`, 10% OFF) | — |
 | 3 | Um **domínio** que você controla — sem ele não existe cadeado | ~R$ 40/ano |
 | 4 | Uma **chave SSH** — o agente cria em um comando | — |
 | 5 | Uma VPS **KVM 2** (2 vCPU · 8 GB · 100 GB) com **Ubuntu 24.04 LTS** | ~R$ 44/mês |

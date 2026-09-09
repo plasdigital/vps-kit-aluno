@@ -68,17 +68,20 @@ claude
 **Deu certo quando:** a pasta abriu e o agente respondeu. Ele já leu o `CLAUDE.md` que está aqui
 dentro — é por isso que você conversa em português em vez de decorar comando.
 
-### 0.9 — 🔴 Dar mão ao agente: a chave da API do provedor
+### 0.9 — 🔴 Dar mão ao agente: a chave da API da Hostinger
 
 Até aqui o agente só sabe *falar*. Este passo é o que dá a ele **mão** na sua conta de hospedagem:
 comprar máquina, abrir firewall, criar registro de DNS, tirar snapshot.
 
-Quase todo provedor tem uma **API**, e é por ela que o agente trabalha. Gere um token no painel da
-sua conta (procure por *API*, *tokens* ou *desenvolvedor*) e guarde num arquivo que **não vai para
-o git** — o `.gitignore` desta pasta já bloqueia `*.env`:
+> 🛒 **Ainda não tem conta?** Este kit é feito para a **[Hostinger](https://www.hostg.xyz/aff_c?offer_id=6&aff_id=214984&url_id=5038)** — é o provedor usado
+> na gravação e o que a documentação daqui pressupõe. O cupom **`PEDROALMEIDA`** dá 10% OFF.
+> Outro provedor funciona (o padrão não depende dele), mas os nomes de tela vão mudar.
+
+A API é por onde o agente trabalha. No painel da Hostinger, vá em **Perfil → API → Gerar token**,
+e guarde num arquivo que **não vai para o git** — o `.gitignore` desta pasta já bloqueia `*.env`:
 
 ```bash
-echo 'PROVEDOR_API_TOKEN=cole-o-token-aqui' > provedor.env
+echo 'HOSTINGER_API_TOKEN=cole-o-token-aqui' > provedor.env
 ```
 
 Depois é só dizer ao agente que o token está lá. Ele lê o arquivo na hora de chamar a API.
@@ -92,13 +95,13 @@ Depois é só dizer ao agente que o token está lá. Ele lê o arquivo na hora d
 - **Erro de senha costuma vir com a lista de símbolos aceitos.** Senha aleatória comum é recusada;
   leia a mensagem, ela diz exatamente quais caracteres precisa ter.
 
-#### O MCP do provedor — opcional
+#### O MCP da Hostinger — opcional
 
-Alguns provedores oferecem um MCP, que é um atalho: o agente ganha as mesmas ações sem você gerar
-token nenhum.
+A Hostinger publica um MCP, que é um atalho: o agente ganha as mesmas ações sem você ter que
+explicar a API para ele. Ele usa **o mesmo token** do passo anterior.
 
 ```bash
-claude mcp add --transport http <provedor> https://mcp.<provedor>.com
+claude mcp add hostinger --env HOSTINGER_API_TOKEN=<seu-token> -- npx hostinger-api-mcp@latest
 ```
 
 **É conveniente, mas não conte com ele.** Numa sessão real de 08/set/2026 os oito servidores MCP do
@@ -188,6 +191,9 @@ não versione. Se ela vazar, a casa é de quem tiver o arquivo.
 
 Duas coisas acontecem aqui, e é bom saber que são **duas**: **comprar** (a fatura) e **provisionar**
 (instalar o sistema na máquina). A chave SSH e o script de pós-instalação entram na segunda.
+
+🛒 **Onde comprar:** [Hostinger, com 10% OFF no cupom `PEDROALMEIDA`](https://www.hostg.xyz/aff_c?offer_id=6&aff_id=214984&url_id=5038) — é a conta que o
+agente vai operar pela API do passo 0.9, e o plano de VPS já vem com um domínio grátis no primeiro ano.
 
 | Campo | Escolha | Por quê |
 |---|---|---|
