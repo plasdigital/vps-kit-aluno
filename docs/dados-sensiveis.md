@@ -33,7 +33,7 @@ histórico de navegação de terceiros. Fica desligado de propósito.
 - [ ] **Pedido de exclusão.** Se um cliente pedir para apagar os dados dele, você precisa conseguir
       fazer isso. Saiba de antemão como.
 - [ ] **Não olhar conversa "para dar uma olhada".** Vale para você e vale para o agente — está
-      escrito como trava no `CLAUDE.md`.
+      escrito como trava no `AGENTS.md`.
 
 ## Se você faz isso para um cliente
 

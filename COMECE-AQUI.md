@@ -65,7 +65,7 @@ cd vps-kit-aluno
 claude
 ```
 
-**Deu certo quando:** a pasta abriu e o agente respondeu. Ele já leu o `CLAUDE.md` que está aqui
+**Deu certo quando:** a pasta abriu e o agente respondeu. Ele já leu o `AGENTS.md` que está aqui
 dentro — é por isso que você conversa em português em vez de decorar comando.
 
 ### 0.9 — 🔴 Dar mão ao agente: a chave da API da Hostinger

@@ -44,7 +44,7 @@ ou mais, quando o histórico não pode expirar, ou — o motivo de verdade — q
 1. **[COMECE-AQUI.md](COMECE-AQUI.md)** — a máquina do zero até a base no ar. Uma vez na vida.
 2. O documento da ferramenta que você quer instalar (tabela abaixo).
 3. `docs/` — o porquê de cada decisão, e o que dá para desfazer.
-4. `CLAUDE.md` — não é para você: é o que o seu agente lê.
+4. `AGENTS.md` — não é para você: é o que o seu agente lê.
 
 ## O que dá para instalar
 
@@ -67,7 +67,7 @@ stacks/               os arquivos de cada serviço
 deploy-<app>.sh       sobe uma aplicação e instala o backup dela
 backup-<app>.sh       o backup de todo dia
 <app>.env.exemplo     o modelo dos segredos (o de verdade só existe na VPS)
-CLAUDE.md / AGENTS.md o manual do seu agente de IA
+AGENTS.md / CLAUDE.md o manual do seu agente de IA
 docs/                 os passos por ferramenta, e as decisões
 ```
 
@@ -92,7 +92,7 @@ sessão em que instalar — cada documento diz como.
 
 ## Se algo der errado
 
-O `CLAUDE.md` tem uma tabela de "o que o erro diz × o que ele significa" — a maior parte dos
+O `AGENTS.md` tem uma tabela de "o que o erro diz × o que ele significa" — a maior parte dos
 problemas desta instalação são erros cuja mensagem aponta para o lugar errado. Peça ao agente:
 
 > *"deu esse erro aqui, o que é de verdade?"*

@@ -24,3 +24,17 @@ http:
         contentTypeNosniff: true
         frameDeny: true
         referrerPolicy: strict-origin-when-cross-origin
+
+    # O mesmo pacote, para app que abre DENTRO do Chatwoot (20/out/2026): o Hub
+    # entra no menu do Chatwoot como painel (hub/public/chatwoot/). Em vez de
+    # proibir qualquer moldura (frameDeny), libera só o próprio domínio e o
+    # Chatwoot do cliente — o resto da internet continua sem poder embutir.
+    seguranca-embutivel-chatwoot:
+      headers:
+        stsSeconds: 31536000
+        stsIncludeSubdomains: true
+        stsPreload: true
+        forceSTSHeader: true
+        contentTypeNosniff: true
+        referrerPolicy: strict-origin-when-cross-origin
+        contentSecurityPolicy: "frame-ancestors 'self' <TROQUE_PELO_SEU_CHATWOOT_URL>"

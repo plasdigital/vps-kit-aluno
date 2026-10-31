@@ -178,7 +178,7 @@ Nenhuma dessas ferramentas vem com alguém cuidando dela. A partir de agora:
 |---|---|
 | **Backup** | as ferramentas deste kit já instalam o seu. **A que você trouxe do GitHub, não.** Decida no dia da instalação o que precisa ser salvo (o banco? o volume?) e peça ao agente para instalar a rotina |
 | **Atualização** | 🔴 o padrão é ficar parado. Acompanhe as releases; suba de versão só quando a nova trouxer algo que você quer, ou a atual der problema |
-| **Quando quebrar** | *"deu esse erro aqui, o que é de verdade?"* — a tabela de armadilhas do `CLAUDE.md` cobre boa parte |
+| **Quando quebrar** | *"deu esse erro aqui, o que é de verdade?"* — a tabela de armadilhas do `AGENTS.md` cobre boa parte |
 | **Se você desistir dela** | peça para remover a stack, o volume e o registro de DNS. Ferramenta abandonada rodando é memória gasta e porta a mais para cuidar |
 
 ## 8. Quando desistir — e não tem problema nenhum
